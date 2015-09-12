@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150912191639) do
+ActiveRecord::Schema.define(version: 20150912195248) do
 
   create_table "castles", force: :cascade do |t|
     t.string "name", limit: 32, null: false
@@ -23,6 +23,13 @@ ActiveRecord::Schema.define(version: 20150912191639) do
   end
 
   add_index "forays", ["wildling_id", "castle_id"], name: "index_forays_on_wildling_id_and_castle_id", unique: true, using: :btree
+
+  create_table "patrols", id: false, force: :cascade do |t|
+    t.integer "castle_id", limit: 4, null: false
+    t.integer "ranger_id", limit: 4, null: false
+  end
+
+  add_index "patrols", ["ranger_id", "castle_id"], name: "index_patrols_on_ranger_id_and_castle_id", unique: true, using: :btree
 
   create_table "rangers", force: :cascade do |t|
     t.string "name", limit: 32, null: false
