@@ -76,6 +76,81 @@ attacking them":
 If we change the `<` to `>`, we get the over-defended castles, and `=`
 gives us castles in equilibrium.
 
+We might want to refine this query, giving less weight to patrols made by
+rangers whose duties spread them too thin. We could say the value of a
+particular ranger's patrol is inversely proportional to the number of patrols
+they do. If they dedicate themselves to a single castle, they add significant
+defensive value there, whereas ranging across a dozen different castles spreads
+that value thin across a larger territory. We can apply this principle to the
+attackers as well as the defenders.
+
+This requires a more complex query, so let's think at first from the
+perspective of a single castle, Castle Black. Starting at the castle,
+```sql
+SELECT castles.*
+FROM castles
+WHERE castles.name = "Castle Black"
+```
+we consider its patrols,
+```sql
+SELECT patrols.*
+FROM castles
+JOIN patrols ON patrols.castle_id = castles.id
+WHERE castles.name = "Castle Black"
+```
+in order to find all of its patrolling rangers.
+```sql
+SELECT rangers.*
+FROM castles
+JOIN patrols ON patrols.castle_id = castles.id
+JOIN rangers ON patrols.ranger_id = rangers.id
+WHERE castles.name = "Castle Black"
+```
+Once we've made it from Castle Black to all of its potential defenders, we need
+to consider how much territory each of those rangers patrols. We can do so by
+rejoining the patrols table on `ranger_id`.
+```sql
+SELECT pt2.*
+FROM castles
+JOIN patrols ON patrols.castle_id = castles.id
+JOIN rangers ON patrols.ranger_id = rangers.id
+JOIN patrols pt2 ON pt2.ranger_id = rangers.id
+WHERE castles.name = "Castle Black"
+```
+This gives us the pool of all patrols made by the rangers that patrol Castle
+Black. We'd like to group these by ranger to see how many castles each ranger is
+patrolling.
+```sql
+SELECT COUNT(pt2.castle_id)
+FROM castles
+JOIN patrols ON patrols.castle_id = castles.id
+JOIN rangers ON patrols.ranger_id = rangers.id
+JOIN patrols pt2 ON pt2.ranger_id = rangers.id
+WHERE castles.name = "Castle Black"
+GROUP BY rangers.id
+```
+Inverting this count gives us a measure of each ranger's value on a per-patrol
+basis.
+```sql
+SELECT (1 / COUNT(pt2.castle_id)) as defense_val
+FROM castles
+JOIN patrols ON patrols.castle_id = castles.id
+JOIN rangers ON patrols.ranger_id = rangers.id
+JOIN patrols pt2 ON pt2.ranger_id = rangers.id
+WHERE castles.name = "Castle Black"
+GROUP BY rangers.id
+```
+We can similarly calculate the danger each wildling presents to Castle Black,
+```sql
+SELECT (1 / COUNT(fo2.castle_id)) as attack_val
+FROM castles
+JOIN forays ON forays.castle_id = castles.id
+JOIN wildlings ON forays.wildling_id = wildlings.id
+JOIN forays fo2 ON fo2.wildling_id = wildlings.id
+WHERE castles.name = "Castle Black"
+GROUP BY wildlings.id
+```
+
 What if we'd like to gauge which wildlings are most likely to break
 through the Wall's defenses? That is, which wildlings can rightly say
 their territory is under-defended overall.
