@@ -67,10 +67,10 @@ attacking them":
 ```sql
   SELECT castles.*
   FROM castles
-  JOIN patrols ON patrols.castle_id = castles.id
-  JOIN forays  ON forays.castle_id  = castles.id
+  LEFT JOIN patrols ON patrols.castle_id = castles.id
+  LEFT JOIN forays  ON forays.castle_id  = castles.id
   GROUP BY castles.id
-  HAVING COUNT(patrols.ranger_id) < COUNT(forays.wildling_id);
+  HAVING COUNT(DISTINCT(patrols.ranger_id)) < COUNT(DISTINCT(forays.wildling_id));
 ```
 
 If we change the `<` to `>`, we get the over-defended castles, and `=`
